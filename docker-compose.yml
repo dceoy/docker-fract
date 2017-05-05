@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  fract:
+    container_name: fract
+    build:
+      context: .
+    restart: always
+    entrypoint:
+      - /bin/bash
+      - -lc
+    environment:
+      FRACTUS_YML: /host/fractus.yml
+    volumes:
+      - ${HOME}:/host
+    command: >
+      'fract open --inter=2'
