@@ -12,7 +12,7 @@ services:
       - ${HOME}:/host
     command:
       - open
-      - --wait=4
+      - --wait=1
       - USD_JPY
       - EUR_USD
       - EUR_JPY
