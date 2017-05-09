@@ -9,8 +9,8 @@
 # Options:
 #   -h, --help        Print usage
 #   -v, --version     Print version information
-#   --droplet         Name of a Docker installed droplet
-#   --fractus-yml     Path to fractus.yml
+#   --droplet         Name of a Docker installed droplet [$FRACTUS_DROPLET]
+#   --fractus-yml     Path to fractus.yml [$FRACTUS_YML]
 #   --build-only      Do not run a container after build
 
 set -e
@@ -18,8 +18,10 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy_do.sh'
-COMMAND_VERSION='v0.0.1'
+COMMAND_VERSION='v0.1.0'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
+DROPLET="${FRACTUS_DROPLET}"
+FRACTUS_YML_PATH="$(eval echo ${FRACTUS_YML})"
 BUILD_ONLY=0
 
 function print_version {
@@ -47,7 +49,7 @@ while [[ -n "${1}" ]]; do
       DROPLET="${2}" && shift 2
       ;;
     '--fractus-yml' )
-      FRACTUS_YML="${2}" && shift 2
+      FRACTUS_YML_PATH="${2}" && shift 2
       ;;
     '--build-only' )
       BUILD_ONLY=1 && shift 1
@@ -59,7 +61,7 @@ while [[ -n "${1}" ]]; do
 done
 
 [[ -n "${DROPLET}" ]] || abort 'missing a droplet name'
-[[ -n "${FRACTUS_YML}" ]] || abort 'missing a path to fractus.yml'
+[[ -n "${FRACTUS_YML_PATH}" ]] || abort 'missing a path to fractus.yml'
 
 set -u
 
@@ -67,10 +69,11 @@ tugboat ssh "${DROPLET}" \
   -c 'wget https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}'
 
 scp -i "$(tugboat config | awk '$1 == "ssh_key_path:" {print $2}')" \
-  "${FRACTUS_YML}" "root@$(tugboat info -a ip4 ${DROPLET} | tail -1):fractus.yml"
+  "${FRACTUS_YML_PATH}" \
+  "root@$(tugboat info -a ip4 ${DROPLET} | tail -1):fractus.yml"
 
 tugboat ssh "${DROPLET}" \
-  -c 'pip install -U pip docker-compose'
+  -c 'apt -y update && apt -y upgrade && pip install -U pip docker-compose'
 
 tugboat ssh "${DROPLET}" \
   -c "docker-compose $([[ ${BUILD_ONLY} -eq 0 ]] && echo 'up -d' || echo 'build')"
