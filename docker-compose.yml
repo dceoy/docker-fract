@@ -12,9 +12,3 @@ services:
       - ${HOME}:/host
     command:
       - open
-      - USD_JPY
-      - EUR_USD
-      - EUR_JPY
-      - GBP_JPY
-      - GBP_USD
-      - EUR_GBP
