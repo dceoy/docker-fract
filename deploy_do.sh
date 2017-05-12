@@ -80,4 +80,5 @@ tugboat ssh ${Q_FLAG} ${DROPLET} \
       apt -y upgrade ${TO_NULL}; \
       pip install -U ${Q_FLAG} pip docker-compose; \
       wget ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
+      echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;
       docker-compose ${DC_CMD} ${TO_NULL};"
