@@ -4,13 +4,13 @@
 #         deploy_do.sh [ options ]
 #
 # Description:
-#   Deploy a Docker container with fractus on DigitalOcean.
+#   Deploy a Docker container with fract on DigitalOcean.
 #
 # Options:
 #   -h, --help        Print usage
 #   -v, --version     Print version information
-#   -d, --droplet     Name of a Docker installed droplet [$FRACTUS_DROPLET]
-#   -f, --fractus-yml Path to fractus.yml [$FRACTUS_YML]
+#   -d, --droplet     Name of a Docker installed droplet [$FRACT_DROPLET]
+#   -f, --fract-yml   Path to fract.yml [$FRACT_YML]
 #   -q, --quiet       Suppress output
 #   --build-only      Do not run a container after build
 
@@ -21,8 +21,8 @@ set -e
 COMMAND_NAME='deploy_do.sh'
 COMMAND_VERSION='v0.1.0'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
-DROPLET="${FRACTUS_DROPLET}"
-FRACTUS_YML_PATH="$(eval echo ${FRACTUS_YML})"
+DROPLET="${FRACT_DROPLET}"
+FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
 Q_FLAG=''
 TO_NULL=''
 DC_CMD='up -d'
@@ -51,8 +51,8 @@ while [[ -n "${1}" ]]; do
     '-d' | '--droplet' )
       DROPLET="${2}" && shift 2
       ;;
-    '-f' | '--fractus-yml' )
-      FRACTUS_YML_PATH="${2}" && shift 2
+    '-f' | '--fract-yml' )
+      FRACT_YML_PATH="${2}" && shift 2
       ;;
     '-q' | '--quiet' )
       Q_FLAG='-q' && TO_NULL='> /dev/null 2>&1' && shift 1
@@ -69,11 +69,11 @@ done
 set -u
 
 [[ -n "${DROPLET}" ]] || abort 'missing a droplet name'
-[[ -n "${FRACTUS_YML_PATH}" ]] || abort 'missing a path to fractus.yml'
+[[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
 scp ${Q_FLAG} -i "$(tugboat config | awk '$1 == "ssh_key_path:" {print $2}')" \
-  "${FRACTUS_YML_PATH}" \
-  "root@$(tugboat info -a ip4 ${DROPLET} | tail -1):fractus.yml"
+  "${FRACT_YML_PATH}" \
+  "root@$(tugboat info -a ip4 ${DROPLET} | tail -1):fract.yml"
 
 tugboat ssh ${Q_FLAG} ${DROPLET} \
   -c "apt -y update ${TO_NULL}; \

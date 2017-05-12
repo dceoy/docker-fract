@@ -1,7 +1,7 @@
 docker-fract
 ============
 
-Dockerfile for [fractus](https://github.com/dceoy/fractus)
+Dockerfile for [fract](https://github.com/dceoy/fract)
 
 Docker image
 ------------
@@ -45,11 +45,11 @@ Deployment on DigitalOcean
     $ tugboat ssh fract -c 'echo Hello'
     ```
 
-5.  Deploy fractus on the droplet
+5.  Deploy fract on the droplet
 
     ```sh
     $ git clone https://github.com/dceoy/docker-fract.git
-    $ ./docker-fract/deploy_do.sh --droplet fract --fractus-yml /path/to/fractus.yml
+    $ ./docker-fract/deploy_do.sh --droplet fract --fract-yml /path/to/fract.yml
     ```
 
 6.  Destroy the droplet
