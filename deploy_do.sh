@@ -12,6 +12,7 @@
 #   -d, --droplet     Name of a Docker installed droplet [$FRACT_DROPLET]
 #   -f, --fract-yml   Path to fract.yml [$FRACT_YML]
 #   -q, --quiet       Suppress output
+#   --tugboat         Path to tugboat command
 #   --build-only      Do not run a container after build
 
 set -e
@@ -21,6 +22,7 @@ set -e
 COMMAND_NAME='deploy_do.sh'
 COMMAND_VERSION='v0.1.0'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
+TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
 FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
 Q_FLAG=''
@@ -57,6 +59,9 @@ while [[ -n "${1}" ]]; do
     '-q' | '--quiet' )
       Q_FLAG='-q' && TO_NULL='> /dev/null 2>&1' && shift 1
       ;;
+    '--tugboat' )
+      TUGBOAT="${2}" && shift 2
+      ;;
     '--build-only' )
       DC_CMD='build' && shift 1
       ;;
@@ -71,11 +76,11 @@ set -u
 [[ -n "${DROPLET}" ]] || abort 'missing a droplet name'
 [[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
-scp ${Q_FLAG} -i "$(tugboat config | awk '$1 == "ssh_key_path:" {print $2}')" \
+scp ${Q_FLAG} -i "$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')" \
   "${FRACT_YML_PATH}" \
-  "root@$(tugboat info -a ip4 ${DROPLET} | tail -1):fract.yml"
+  "root@$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1):fract.yml"
 
-tugboat ssh ${Q_FLAG} ${DROPLET} \
+${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
   -c "apt -y update ${TO_NULL}; \
       apt -y upgrade ${TO_NULL}; \
       pip install -U ${Q_FLAG} pip docker-compose; \
