@@ -90,9 +90,10 @@ if [[ ${DESTROY} -eq 0 ]]; then
 
   if [[ ${CREATE} -ne 0 ]]; then
     ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
-    sleep 30
-    for i in $(seq 20); do
-      ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} -c 'pwd' && break || sleep 5
+    sleep 35
+    for i in $(seq 5); do
+      ${TUGBOAT} ssh -q ${DROPLET} -c 'pwd' > /dev/null 2>&1 && break
+      [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
   fi
 
@@ -101,11 +102,9 @@ if [[ ${DESTROY} -eq 0 ]]; then
     "root@$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1):fract.yml"
 
   ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-    -c "apt -y update ${TO_NULL}; \
-        apt -y upgrade ${TO_NULL}; \
-        pip install -U ${Q_FLAG} pip docker-compose; \
+    -c "apt -y update ${TO_NULL} && apt -y upgrade ${TO_NULL} && pip install -U ${Q_FLAG} pip docker-compose; \
         wget ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
-        echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;
+        echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc; \
         docker-compose ${DC_CMD} ${TO_NULL};"
 else
   ${TUGBOAT} destroy -y ${Q_FLAG} ${DROPLET}
