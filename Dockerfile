@@ -13,8 +13,7 @@ RUN set -e \
 
 RUN set -e \
       && pip install -U pip \
-      && pip install -U /tmp/oandapy.tar.gz \
-      && pip install -U /tmp/fract.tar.gz \
+      && pip install -U /tmp/oandapy.tar.gz /tmp/fract.tar.gz \
       && rm -rf /tmp/*
 
 ENTRYPOINT ["fract"]
