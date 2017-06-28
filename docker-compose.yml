@@ -12,4 +12,3 @@ services:
       - ${HOME}:/host
     command:
       - open
-      - --models=delta,bollinger
