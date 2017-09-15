@@ -49,7 +49,7 @@ Deployment on DigitalOcean
 
     ```sh
     $ git clone https://github.com/dceoy/docker-fract.git
-    $ ./docker-fract/deploy_do.sh --droplet fract --fract-yml /path/to/fract.yml
+    $ ./docker-fract/deploy.sh --droplet fract --fract-yml /path/to/fract.yml
     ```
 
 6.  Destroy the droplet

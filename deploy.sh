@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Usage:  deploy_do.sh [ -h | --help | -v | --version ]
-#         deploy_do.sh [ options ]
+# Usage:  deploy.sh [ -h | --help | -v | --version ]
+#         deploy.sh [ options ]
 #
 # Description:
 #   Deploy a Docker container with fract on DigitalOcean.
@@ -21,7 +21,7 @@ set -e
 
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
-COMMAND_NAME='deploy_do.sh'
+COMMAND_NAME='deploy.sh'
 COMMAND_VERSION='v0.1.0'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 TUGBOAT='tugboat'
