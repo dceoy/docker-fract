@@ -22,7 +22,7 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.0'
+COMMAND_VERSION='v0.1.1'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
@@ -88,13 +88,20 @@ set -u
 if [[ ${DESTROY} -eq 0 ]]; then
   [[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
-  if [[ ${CREATE} -ne 0 ]]; then
+  if [[ ${CREATE} -eq 0 ]]; then
+    ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
+      -c "[[ -f docker-compose.yml ]] && docker-compose stop ${TO_NULL} && docker-compose rm -f ${TO_NULL}"
+  else
     ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
     sleep 35
     for i in $(seq 5); do
       ${TUGBOAT} ssh -q ${DROPLET} -c 'pwd' > /dev/null 2>&1 && break
       [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
+    ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
+      -c "apt -y update ${TO_NULL} && apt -y upgrade ${TO_NULL}; \
+          pip install -U ${Q_FLAG} pip && pip install -U ${Q_FLAG} docker-compose; \
+          echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
   scp ${Q_FLAG} -i "$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')" \
@@ -102,9 +109,7 @@ if [[ ${DESTROY} -eq 0 ]]; then
     "root@$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1):fract.yml"
 
   ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-    -c "apt -y update ${TO_NULL} && apt -y upgrade ${TO_NULL} && pip install -U ${Q_FLAG} pip docker-compose; \
-        wget ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
-        echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc; \
+    -c "wget -N ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
         docker-compose ${DC_CMD} ${TO_NULL};"
 else
   ${TUGBOAT} destroy -y ${Q_FLAG} ${DROPLET}
