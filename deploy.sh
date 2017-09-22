@@ -14,6 +14,7 @@
 #   -q, --quiet       Suppress output
 #   --tugboat         Path to tugboat command
 #   --build-only      Do not run a container after build
+#   --rebuild         Rebuild a container
 #   --create          Create a droplet and deploy a container
 #   --destroy         Destroy a droplet
 
@@ -22,14 +23,14 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.1'
+COMMAND_VERSION='v0.1.2'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
 FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
 Q_FLAG=''
 TO_NULL=''
-DC_CMD='up -d'
+DC_CMD='up -d --remove-orphans'
 CREATE=0
 DESTROY=0
 
@@ -67,7 +68,10 @@ while [[ -n "${1}" ]]; do
       TUGBOAT="${2}" && shift 2
       ;;
     '--build-only' )
-      DC_CMD='build' && shift 1
+      DC_CMD='build --pull --no-cache' && shift 1
+      ;;
+    '--rebuild' )
+      DC_CMD='up -d --remove-orphans --build' && shift 1
       ;;
     '--create' )
       CREATE=1 && shift 1
