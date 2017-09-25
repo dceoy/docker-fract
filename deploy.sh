@@ -23,7 +23,7 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.2'
+COMMAND_VERSION='v0.1.3'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
@@ -94,7 +94,7 @@ if [[ ${DESTROY} -eq 0 ]]; then
 
   if [[ ${CREATE} -eq 0 ]]; then
     ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "[[ -f docker-compose.yml ]] && docker-compose stop ${TO_NULL} && docker-compose rm -f ${TO_NULL}"
+      -c "docker-compose stop ${TO_NULL} && docker-compose rm -f ${TO_NULL} || exit 0;"
   else
     ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
     sleep 35
@@ -103,8 +103,7 @@ if [[ ${DESTROY} -eq 0 ]]; then
       [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
     ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "apt -y update ${TO_NULL} && apt -y upgrade ${TO_NULL}; \
-          pip install -U ${Q_FLAG} pip && pip install -U ${Q_FLAG} docker-compose; \
+      -c "apt -y update ${TO_NULL} && pip install -U ${Q_FLAG} pip docker-compose; \
           echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
