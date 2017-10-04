@@ -30,7 +30,7 @@ DROPLET="${FRACT_DROPLET}"
 FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
 Q_FLAG=''
 TO_NULL=''
-DC_CMD='up -d --remove-orphans'
+DC_BUILD='build'
 CREATE=0
 DESTROY=0
 
@@ -68,10 +68,10 @@ while [[ -n "${1}" ]]; do
       TUGBOAT="${2}" && shift 2
       ;;
     '--build-only' )
-      DC_CMD='build --pull --no-cache' && shift 1
+      DC_BUILD='build --pull --no-cache' && shift 1
       ;;
     '--rebuild' )
-      DC_CMD='up -d --remove-orphans --build' && shift 1
+      DC_BUILD='build --pull --no-cache' && shift 1
       ;;
     '--create' )
       CREATE=1 && shift 1
@@ -113,7 +113,8 @@ if [[ ${DESTROY} -eq 0 ]]; then
 
   ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
     -c "wget -N ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
-        docker-compose ${DC_CMD} ${TO_NULL};"
+        docker-compose ${DC_BUILD} ${TO_NULL}; \
+        docker-compose up -d --remove-orphans ${TO_NULL};"
 else
   ${TUGBOAT} destroy -y ${Q_FLAG} ${DROPLET}
 fi
