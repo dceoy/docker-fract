@@ -6,6 +6,7 @@ RUN set -e \
 RUN set -e \
       && apt-get -y update \
       && apt-get -y upgrade \
+      && apt-get -y autoremove \
       && apt-get clean
 
 RUN set -e \
