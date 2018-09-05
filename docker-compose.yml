@@ -1,15 +1,46 @@
+---
 version: '3'
 
 services:
   fract:
     container_name: fract
     build:
-      context: .
+      context: ../fract
+      dockerfile: Dockerfile
     image: dceoy/fract:latest
-    restart: always
-    environment:
-      FRACT_YML: /host/fract.yml
+    networks:
+      - fract-db
+    depends_on:
+      - redis
     volumes:
-      - ${HOME}:/host
+      - ${PWD}:/wd
+    working_dir: /wd
+    entrypoint:
+      - fract
     command:
       - open
+      - --file=/wd/fract.yml
+      - --redis-host=redis:6379
+      - --redis-port=6379
+      - --redis-db=0
+      - --redis-maxl=10000
+      - --wait=1
+      - --timeout=3600
+      - USD_JPY
+      - EUR_USD
+      - EUR_JPY
+      - GBP_JPY
+      - GBP_USD
+      - EUR_GBP
+    restart: always
+  redis:
+    container_name: redis
+    image: redis:latest
+    networks:
+      - fract-db
+    ports:
+      - 6379:6379
+    restart: always
+
+networks:
+  fract-db:
