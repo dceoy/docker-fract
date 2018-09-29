@@ -2,12 +2,30 @@
 version: '3'
 
 services:
-  fract:
-    container_name: fract
+  trader:
+    container_name: fract-trader
     build:
-      context: ../fract
+      context: .
       dockerfile: Dockerfile
-    image: dceoy/fract:latest
+    image: dceoy/fract:dev
+    networks:
+      - fract-db
+    depends_on:
+      - streamer
+      - redis
+    volumes:
+      - ${PWD}:/wd
+    working_dir: /wd
+    entrypoint:
+      - fract
+    command:
+      - open
+      - --file=/wd/fract.yml
+      - --log-dir=./fract_log
+    restart: always
+  streamer:
+    container_name: fract-streamer
+    image: dceoy/fract:dev
     networks:
       - fract-db
     depends_on:
@@ -18,20 +36,10 @@ services:
     entrypoint:
       - fract
     command:
-      - open
+      - stream
       - --file=/wd/fract.yml
-      - --redis-host=redis:6379
-      - --redis-port=6379
-      - --redis-db=0
-      - --redis-maxl=10000
-      - --wait=1
-      - --timeout=3600
-      - USD_JPY
-      - EUR_USD
-      - EUR_JPY
-      - GBP_JPY
-      - GBP_USD
-      - EUR_GBP
+      - --target=rate
+      - --quiet
     restart: always
   redis:
     container_name: redis
@@ -40,7 +48,13 @@ services:
       - fract-db
     ports:
       - 6379:6379
+    volumes:
+      - redis-data:/data
     restart: always
 
 networks:
   fract-db:
+    external: false
+
+volumes:
+  redis-data:

@@ -23,7 +23,7 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.3'
+COMMAND_VERSION='v0.1.4'
 COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
@@ -99,11 +99,11 @@ if [[ ${DESTROY} -eq 0 ]]; then
     ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
     sleep 35
     for i in $(seq 5); do
-      ${TUGBOAT} ssh -q ${DROPLET} -c 'pwd' > /dev/null 2>&1 && break
+      ${TUGBOAT} ssh -q ${DROPLET} -c 'mkdir fract_log' > /dev/null 2>&1 && break
       [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
     ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "sh -c 'apt-get -y update && apt-get -y upgrade && apt-get -y autoremove && apt-get clean' ${TO_NULL}; \
+      -c "sh -c 'apt-get -y update && apt-get -y dist-upgrade && apt-get -y autoremove && apt-get clean' ${TO_NULL}; \
           echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
