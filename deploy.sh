@@ -103,7 +103,8 @@ if [[ ${DESTROY} -eq 0 ]]; then
       [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
     ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "sh -c 'apt-get -y update && apt-get -y upgrade && apt-get -y autoremove && apt-get clean' ${TO_NULL}; \
+      -c "sh -c 'apt -y update && apt -y upgrade && apt -y install python3-pip' ${TO_NULL}; \
+          sh -c 'pip3 install -U pip docker-compose' ${TO_NULL}; \
           echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
