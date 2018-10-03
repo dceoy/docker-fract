@@ -46,8 +46,6 @@ services:
     image: redis:latest
     networks:
       - fract-db
-    ports:
-      - 6379:6379
     volumes:
       - redis-data:/data
     restart: always
