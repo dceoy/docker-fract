@@ -99,7 +99,7 @@ if [[ ${DESTROY} -eq 0 ]]; then
     ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
     sleep 35
     for i in $(seq 5); do
-      ${TUGBOAT} ssh -q ${DROPLET} -c 'mkdir fract_log' > /dev/null 2>&1 && break
+      ${TUGBOAT} ssh -q ${DROPLET} -c 'mkdir log_from_fract' > /dev/null 2>&1 && break
       [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
     done
     ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \

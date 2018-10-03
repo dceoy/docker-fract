@@ -21,7 +21,7 @@ services:
     command:
       - open
       - --file=/wd/fract.yml
-      - --log-dir=./fract_log
+      - --log-dir=./log_from_fract
     restart: always
   streamer:
     container_name: fract-streamer
