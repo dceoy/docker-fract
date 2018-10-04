@@ -23,8 +23,9 @@ set -e
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.4'
-COMMAND_PATH="$(dirname ${0})/$(basename ${0})"
+COMMAND_VERSION='v0.1.5'
+COMMAND_DIR_PATH="$(dirname ${0})"
+COMMAND_PATH="${COMMAND_DIR_PATH}/$(basename ${0})"
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
 FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
@@ -108,13 +109,14 @@ if [[ ${DESTROY} -eq 0 ]]; then
           echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
-  scp ${Q_FLAG} -i "$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')" \
-    "${FRACT_YML_PATH}" \
-    "root@$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1):fract.yml"
+  SSH_KEY_PATH="$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')"
+  DROPLET_IP="$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1)"
+  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${FRACT_YML_PATH}" "root@${DROPLET_IP}:fract.yml"
+  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/Dockerfile" "root@${DROPLET_IP}:"
+  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/docker-compose.yml" "root@${DROPLET_IP}:"
 
   ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-    -c "wget -N ${Q_FLAG} https://raw.githubusercontent.com/dceoy/docker-fract/master/{Dockerfile,docker-compose.yml}; \
-        docker-compose ${DC_BUILD} ${TO_NULL}; \
+    -c "docker-compose ${DC_BUILD} ${TO_NULL}; \
         docker-compose up -d --remove-orphans ${TO_NULL};"
 else
   ${TUGBOAT} destroy -y ${Q_FLAG} ${DROPLET}
