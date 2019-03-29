@@ -22,6 +22,7 @@ services:
       - open
       - --file=/wd/fract.yml
       - --log-dir=./log_from_fract
+      - --ignore-api-error
     restart: always
   oanda-cli:
     container_name: oanda-cli
@@ -40,6 +41,7 @@ services:
       - --file=/wd/fract.yml
       - --use-redis
       - --target=pricing
+      - --ignore-api-error
       - --quiet
     restart: always
   redis:
