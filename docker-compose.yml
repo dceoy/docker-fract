@@ -22,6 +22,7 @@ services:
       - open
       - --file=/wd/fract.yml
       - --log-dir=./log_from_fract
+      - --timeout=3600
       - --ignore-api-error
     restart: always
   oanda-cli:
@@ -41,6 +42,7 @@ services:
       - --file=/wd/fract.yml
       - --use-redis
       - --target=pricing
+      - --timeout=3600
       - --ignore-api-error
       - --quiet
     restart: always
