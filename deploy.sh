@@ -24,11 +24,11 @@ set -e
 
 COMMAND_NAME='deploy.sh'
 COMMAND_VERSION='v0.1.5'
-COMMAND_DIR_PATH="$(dirname ${0})"
-COMMAND_PATH="${COMMAND_DIR_PATH}/$(basename ${0})"
+COMMAND_DIR_PATH="$(dirname "${0}")"
+COMMAND_PATH="${COMMAND_DIR_PATH}/"$(basename "${0}")
 TUGBOAT='tugboat'
 DROPLET="${FRACT_DROPLET}"
-FRACT_YML_PATH="$(eval echo ${FRACT_YML})"
+FRACT_YML_PATH=$(eval echo "${FRACT_YML}")
 Q_FLAG=''
 TO_NULL=''
 DC_BUILD='build'
@@ -40,7 +40,7 @@ function print_version {
 }
 
 function print_usage {
-  sed -ne '1,2d; /^#/!q; s/^#$/# /; s/^# //p;' ${COMMAND_PATH}
+  sed -ne '1,2d; /^#/!q; s/^#$/# /; s/^# //p;' "${COMMAND_PATH}"
 }
 
 function abort {
@@ -94,30 +94,29 @@ if [[ ${DESTROY} -eq 0 ]]; then
   [[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
   if [[ ${CREATE} -eq 0 ]]; then
-    ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "docker-compose stop ${TO_NULL} && docker-compose rm -f ${TO_NULL} || exit 0;"
+    ${TUGBOAT} ssh ${Q_FLAG} "${DROPLET}" -c "\
+sh -c 'docker-compose stop && docker-compose rm -f || exit 0' ${TO_NULL}"
   else
-    ${TUGBOAT} create ${Q_FLAG} ${DROPLET}
+    ${TUGBOAT} create ${Q_FLAG} "${DROPLET}"
     sleep 35
     for i in $(seq 5); do
-      ${TUGBOAT} ssh -q ${DROPLET} -c 'mkdir log_from_fract' > /dev/null 2>&1 && break
-      [[ ${i} -lt 5 ]] && sleep 5 || abort 'connection timed out'
+      ${TUGBOAT} ssh -q "${DROPLET}" -c 'mkdir log_from_fract' > /dev/null 2>&1 && break
+      if [[ ${i} -lt 5 ]]; then
+        sleep 5
+      else
+        abort 'connection timed out'
+      fi
     done
-    ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-      -c "sh -c 'apt -y update && apt -y install python3-pip' ${TO_NULL}; \
-          sh -c 'pip3 install -U pip docker-compose' ${TO_NULL}; \
-          echo \"alias d='docker-compose' dc='docker-compose'\" >> ~/.bashrc;"
   fi
 
   SSH_KEY_PATH="$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')"
-  DROPLET_IP="$(${TUGBOAT} info -a ip4 ${DROPLET} | tail -1)"
+  DROPLET_IP=$(${TUGBOAT} info -a ip4 "${DROPLET}" | tail -1)
   scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${FRACT_YML_PATH}" "root@${DROPLET_IP}:fract.yml"
   scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/Dockerfile" "root@${DROPLET_IP}:"
   scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/docker-compose.yml" "root@${DROPLET_IP}:"
 
-  ${TUGBOAT} ssh ${Q_FLAG} ${DROPLET} \
-    -c "docker-compose ${DC_BUILD} ${TO_NULL}; \
-        docker-compose up -d --remove-orphans ${TO_NULL};"
+  ${TUGBOAT} ssh ${Q_FLAG} "${DROPLET}" -c "\
+sh -c 'docker-compose ${DC_BUILD} && docker-compose up -d --remove-orphans' ${TO_NULL}"
 else
-  ${TUGBOAT} destroy -y ${Q_FLAG} ${DROPLET}
+  ${TUGBOAT} destroy -y ${Q_FLAG} "${DROPLET}"
 fi
