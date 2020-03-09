@@ -24,6 +24,7 @@ services:
       - --log-dir=./log_from_fract
       - --timeout=3600
       - --ignore-api-error
+    # - --model=kalman
     restart: always
   oanda-cli:
     container_name: oanda-cli
