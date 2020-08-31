@@ -15,34 +15,41 @@ $ docker pull dceoy/fract
 Deployment on DigitalOcean
 --------------------------
 
-1.  Set up Tugboat.
+1.  Install [doctl](https://www.digitalocean.com/docs/apis-clis/doctl/).
+
+2.  Set up doctl.
 
     ```sh
-    $ gem install --no-document tugboat
-    $ tugboat authorize
-    # => set `docker-16-04` for "image"
+    # Set an access token
+    $ doctl auth init
+
+    # Import an SSH key
+    $ doctl compute ssh-key import id_rsa --public-key-file /path/to/id_rsa.pub
+    $ doctl compute ssh-key list
     ```
 
-2.  Set an SSH keys.
+3.  Edit the `config.yaml`.
 
-    ```sh
-    $ tugboat add-key -p /path/to/public_key key_name
-    $ vim ~/.tugboat
-    # =>  set keys to Tugboat:
-    #       - ssh.ssh_key_pat   =>  the path to the secret key
-    #       - defaults.ssh_key  =>  the public key ID (shown with `tugboat keys`)
-    ```
+    - Paths to `config.yaml`
+      - macOS: `~/Library/Application Support/doctl/config.yaml`
+      - Linux: `~/.config/doctl/config.yaml`
+    - Keys to fill
+      - `droplet.create.image`: docker-20-04
+      - `droplet.create.region`: nyc1
+      - `droplet.create.size`: s-1vcpu-1gb
+      - `droplet.create.ssh-keys`: (fingerprints)
+      - `compute.ssh.ssh-key-path`: /path/to/id_rsa
 
 3.  Create a droplet on DigitalOcean.
 
     ```sh
-    $ tugboat create fract
+    $ doctl compute droplet create --wait fract
     ```
 
 4.  Test SSH connection to the droplet.
 
     ```sh
-    $ tugboat ssh fract -c 'echo Hello'
+    $ doctl compute ssh --ssh-command='ls -la' fract
     ```
 
 5.  Deploy fract on the droplet
@@ -55,5 +62,5 @@ Deployment on DigitalOcean
 6.  Destroy the droplet
 
     ```sh
-    $ tugboat destroy -y fract
+    $ doctl compute droplet delete -f fract
     ```

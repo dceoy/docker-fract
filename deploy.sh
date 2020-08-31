@@ -1,39 +1,50 @@
 #!/usr/bin/env bash
 #
-# Usage:  deploy.sh [ -h | --help | -v | --version ]
-#         deploy.sh [ options ]
+# Usage:
+#   deploy.sh -h|--help
+#   deploy.sh --version
+#   deploy.sh [ options ]
 #
 # Description:
 #   Deploy a Docker container with fract on DigitalOcean.
 #
 # Options:
-#   -h, --help        Print usage
-#   -v, --version     Print version information
-#   -d, --droplet     Name of a Docker installed droplet [$FRACT_DROPLET]
-#   -f, --fract-yml   Path to fract.yml [$FRACT_YML]
-#   -q, --quiet       Suppress output
-#   --tugboat         Path to tugboat command
-#   --build-only      Do not run a container after build
-#   --rebuild         Rebuild a container
-#   --create          Create a droplet and deploy a container
-#   --destroy         Destroy a droplet
+#   -h, --help          Print usage
+#   --version           Print version information
+#   --droplet=<name>    Name of a Docker installed droplet [$FRACT_DROPLET]
+#   --fract-yml=<path>  Path to fract.yml [$FRACT_YML]
+#   --doctl=<path>      Path to doctl command
+#   --build-only        Do not run a container after build
+#   --rebuild           Rebuild a container
+#   --create            Create a droplet and deploy a container
+#   --destroy           Destroy a droplet
 
 set -e
 
 [[ "${1}" = '--debug' ]] && set -x && shift 1
 
 COMMAND_NAME='deploy.sh'
-COMMAND_VERSION='v0.1.5'
+COMMAND_VERSION='v0.2.0'
 COMMAND_DIR_PATH="$(dirname "${0}")"
 COMMAND_PATH="${COMMAND_DIR_PATH}/"$(basename "${0}")
-TUGBOAT='tugboat'
+DOCTL='doctl'
 DROPLET="${FRACT_DROPLET}"
 FRACT_YML_PATH=$(eval echo "${FRACT_YML}")
-Q_FLAG=''
-TO_NULL=''
 DC_BUILD='build'
 CREATE=0
 DESTROY=0
+
+case "${OSTYPE}" in
+  darwin* )
+    DOCTL_CONFIG_PATH="${HOME}/Library/Application\\ Support/doctl/config.yaml"
+    ;;
+  linux* )
+    DOCTL_CONFIG_PATH="${HOME}/.config/doctl/config.yaml"
+    ;;
+  * )
+    DOCTL_CONFIG_PATH=''
+    ;;
+esac
 
 function print_version {
   echo "${COMMAND_NAME}: ${COMMAND_VERSION}"
@@ -50,23 +61,29 @@ function abort {
 
 while [[ -n "${1}" ]]; do
   case "${1}" in
-    '-v' | '--version' )
+    '--version' )
       print_version && exit 0
       ;;
     '-h' | '--help' )
       print_usage && exit 0
       ;;
-    '-d' | '--droplet' )
+    '--droplet' )
       DROPLET="${2}" && shift 2
       ;;
-    '-f' | '--fract-yml' )
+    --droplet=* )
+      DROPLET="${1#*\=}" && shift 1
+      ;;
+    '--fract-yml' )
       FRACT_YML_PATH="${2}" && shift 2
       ;;
-    '-q' | '--quiet' )
-      Q_FLAG='-q' && TO_NULL='> /dev/null 2>&1' && shift 1
+    --fract-yml=* )
+      FRACT_YML_PATH="${1#*\=}" && shift 1
       ;;
-    '--tugboat' )
-      TUGBOAT="${2}" && shift 2
+    '--doctl' )
+      DOCTL="${2}" && shift 2
+      ;;
+    --doctl=* )
+      DOCTL="${1#*\=}" && shift 1
       ;;
     '--build-only' )
       DC_BUILD='build --pull --no-cache' && shift 1
@@ -88,35 +105,30 @@ done
 
 set -u
 
+[[ -n "${DOCTL_CONFIG_PATH}" ]] || DOCTL="${DOCTL} --config=${DOCTL_CONFIG_PATH}"
 [[ -n "${DROPLET}" ]] || abort 'missing a droplet name'
 
 if [[ ${DESTROY} -eq 0 ]]; then
   [[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
   if [[ ${CREATE} -eq 0 ]]; then
-    ${TUGBOAT} ssh ${Q_FLAG} "${DROPLET}" -c "\
-sh -c 'docker-compose stop && docker-compose rm -f || exit 0' ${TO_NULL}"
+    ${DOCTL} compute ssh "${DROPLET}" --ssh-command 'docker-compose down || exit 0'
   else
-    ${TUGBOAT} create ${Q_FLAG} "${DROPLET}"
-    sleep 35
-    for i in $(seq 5); do
-      ${TUGBOAT} ssh -q "${DROPLET}" -c 'mkdir log_from_fract' > /dev/null 2>&1 && break
-      if [[ ${i} -lt 5 ]]; then
-        sleep 5
-      else
-        abort 'connection timed out'
-      fi
-    done
+    ${DOCTL} compute droplet create --wait "${DROPLET}"
+    sleep 10
+    ${DOCTL} compute ssh "${DROPLET}" --ssh-command 'mkdir log_from_fract'
   fi
 
-  SSH_KEY_PATH="$(${TUGBOAT} config | awk '$1 == "ssh_key_path:" {print $2}')"
-  DROPLET_IP=$(${TUGBOAT} info -a ip4 "${DROPLET}" | tail -1)
-  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${FRACT_YML_PATH}" "root@${DROPLET_IP}:fract.yml"
-  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/Dockerfile" "root@${DROPLET_IP}:"
-  scp ${Q_FLAG} -i "${SSH_KEY_PATH}" "${COMMAND_DIR_PATH}/docker-compose.yml" "root@${DROPLET_IP}:"
+  SSH_KEY_PATH=$(grep ssh-key-path ~/.config/doctl/config.yaml | awk '{print $2}')
+  DROPLET_IP=$(doctl compute droplet list | awk '$2 == "'"${DROPLET}"'" {print $3}')
+  scp -i "${SSH_KEY_PATH}" \
+    "${FRACT_YML_PATH}" \
+    "${COMMAND_DIR_PATH}/Dockerfile" \
+    "${COMMAND_DIR_PATH}/docker-compose.yml" \
+    "root@${DROPLET_IP}:"
 
-  ${TUGBOAT} ssh ${Q_FLAG} "${DROPLET}" -c "\
-sh -c 'docker-compose ${DC_BUILD} && docker-compose up -d --remove-orphans' ${TO_NULL}"
+  ${DOCTL} compute ssh "${DROPLET}" \
+    --ssh-command "docker-compose ${DC_BUILD} && docker-compose up -d --remove-orphans"
 else
-  ${TUGBOAT} destroy -y ${Q_FLAG} "${DROPLET}"
+  ${DOCTL} compute droplet delete -f "${DROPLET}"
 fi
