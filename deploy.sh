@@ -112,13 +112,24 @@ if [[ ${DESTROY} -eq 0 ]]; then
   [[ -n "${FRACT_YML_PATH}" ]] || abort 'missing a path to fract.yml'
 
   if [[ ${CREATE} -eq 0 ]]; then
+    echo -e ">>\tClean up containers"
     ${DOCTL} compute ssh "${DROPLET}" --ssh-command 'docker-compose down || exit 0'
   else
+    echo -e ">>\tCreate a droplet"
     ${DOCTL} compute droplet create --wait "${DROPLET}"
     sleep 10
-    ${DOCTL} compute ssh "${DROPLET}" --ssh-command 'mkdir log_from_fract'
+    echo -e ">>\tCreate a log directory"
+    for i in $(seq 5); do
+      ${DOCTL} compute ssh "${DROPLET}" --ssh-command 'mkdir log_from_fract' > /dev/null 2>&1 && break
+      if [[ ${i} -lt 5 ]]; then
+        sleep 5
+      else
+        abort 'connection timed out'
+      fi
+    done
   fi
 
+  echo -e ">>\tCopy the config files"
   SSH_KEY_PATH=$(grep ssh-key-path ~/.config/doctl/config.yaml | awk '{print $2}')
   DROPLET_IP=$(doctl compute droplet list | awk '$2 == "'"${DROPLET}"'" {print $3}')
   scp -i "${SSH_KEY_PATH}" \
@@ -127,8 +138,10 @@ if [[ ${DESTROY} -eq 0 ]]; then
     "${COMMAND_DIR_PATH}/docker-compose.yml" \
     "root@${DROPLET_IP}:"
 
+  echo -e ">>\tCreate and start containers"
   ${DOCTL} compute ssh "${DROPLET}" \
     --ssh-command "docker-compose ${DC_BUILD} && docker-compose up -d --remove-orphans"
 else
+  echo -e ">>\tDelete the droplet"
   ${DOCTL} compute droplet delete -f "${DROPLET}"
 fi
