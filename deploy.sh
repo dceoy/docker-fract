@@ -143,5 +143,8 @@ if [[ ${DESTROY} -eq 0 ]]; then
     --ssh-command "docker-compose ${DC_BUILD} && docker-compose up -d --remove-orphans"
 else
   echo -e ">>\tDelete the droplet"
-  ${DOCTL} compute droplet delete -f "${DROPLET}"
+  ${DOCTL} compute droplet list \
+    | grep -e "^[0-9]\+ \+${DROPLET} " \
+    | cut -d ' ' -f 1 \
+    | xargs -i doctl compute droplet delete -f {}
 fi
